@@ -20,12 +20,14 @@
     "buildClient": "yarn workspace nt-app electron:build"
   },
   "dependencies": {
-    "@noita-together/nt-message": "1.0.1",
+    "@noita-together/nt-message": "https://github.com/Shortman422/nt-message.git#bee3d05929fc682da5246512c5af6914a1068a90",
     "axios": "^1.4.0"
   },
   "devDependencies": {
-    "prettier": "latest",
+    "@types/node": "^20.2.5",
+    "prettier": "^3.1.0",
     "ts-node": "^10.9.1",
-    "ts-node-dev": "^2.0.0"
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.0.0"
   }
 }

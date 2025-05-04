@@ -101,6 +101,7 @@ import vInput from "../components/vInput.vue"
 import { flagInfo } from "../store/index.js"
 import { remote } from 'electron'
 import fs from "fs";
+import { Logger } from "../utils/Logger"
 const dialog = remote.dialog
 
 export default {
@@ -121,12 +122,17 @@ export default {
             obj[flag.id] = Object.assign({}, flag)
         }
         this.tempFlags = obj
+        this.tempModFlags = new Map(this.$store.getters.modFlags)
         this.gamemode = this.$store.getters.roomGamemode
     },
     data() {
         return {
             gamemode: null,
-            tempFlags: null
+            tempFlags: null,
+            tempModFlags: null,
+            logger: new Logger('vRoomFlags'),
+            savedPreset: false,
+            loadedPreset: false,
         }
     },
     computed: {
@@ -189,7 +195,22 @@ export default {
           if (!this.tempFlags.NT_sync_orbs.value) {
             this.tempFlags.NT_sync_orb_count.value = 0
           }
-          this.$emit("applyFlags", Object.values(this.tempFlags))
+          const presetUtilized = this.savedPreset || this.loadedPreset
+          if(presetUtilized) this.$store.commit("setRoomPresetModFlags", this.tempModFlags)
+          this.$emit("applyFlags", {
+            gameFlags: Object.values(this.tempFlags),
+            modFlags: this.tempModFlags,
+            presetUtilized: presetUtilized})
+        },
+        generatePreset() {
+          // Update the schemaVersion when modifying and add handling in loadPresets()
+          const schemaVersion = 1.0
+          const presetData = {
+            schemaVersion: schemaVersion,
+            gameFlags: this.tempFlags,
+            modFlags: Object.fromEntries(this.tempModFlags)
+          }
+          return presetData
         },
         loadPresets(){
           dialog.showOpenDialog({
@@ -197,32 +218,89 @@ export default {
             title: "Load NT Lobby Preset",
             filters: ["json"],
             buttonLabel: "Load"
-          })
-              .then((dialogReturn)=>{
-                if(dialogReturn.canceled) return;
-                // fileNames is an array that contains all the selected
-                if(dialogReturn.filePaths === undefined || dialogReturn.filePaths.length === 0){
-                  console.log("No file selected");
-                  return;
+          }).then((dialogReturn)=>{
+            if(dialogReturn.canceled) return;
+            // fileNames is an array that contains all the selected
+            if(dialogReturn.filePaths === undefined || dialogReturn.filePaths.length === 0){
+              this.logger.debug("No file selected");
+              return;
+            }
+            const filePath = dialogReturn.filePaths[0]
+
+            fs.readFile(filePath, 'utf-8', (err, data) => {
+              if(err){
+                alert("An error occurred reading the file :" + err.message);
+                return;
+              }
+
+              // Change how to handle the file content
+              this.logger.debug(`The file content is : ${data}`)
+              const oldSeed = this.tempFlags.NT_sync_world_seed.value
+              this.loadValidJsonInput(data)
+              this.tempFlags.NT_sync_world_seed.value = oldSeed
+              this.$refs.orbInput.$refs.input.dispatchEvent(new Event("input"))
+              this.$refs.seedInput.$refs.input.dispatchEvent(new Event("input"))
+            });            
+            this.loadedPreset = true
+            this.logger.debug(`loadPresets: ${this.loadedPreset}`)
+          });
+        },
+        loadValidJsonInput(jsonString){
+          let presetData = {}
+          try {
+            presetData = JSON.parse(jsonString)
+          } catch (e) {
+            if (e instanceof SyntaxError) {
+              dialog.showMessageBox({
+                type: "error",
+                title: "Invalid JSON",
+                message: "The file cannot be parsed as valid JSON.",
+                buttons: ["OK"]
+              })
+              return
+            }
+            throw e
+          }
+          const schemaVersion = presetData.schemaVersion || 0
+          this.logger.debug(`Loading preset with schemaVersion: ${schemaVersion}`)
+          switch (schemaVersion) {
+            case 0:
+              this.tempFlagsFromJson(presetData)
+              break;
+            case 1.0:
+              this.tempFlagsFromJson(presetData.gameFlags)
+              this.tempModFlags = new Map();
+              this.tempModFlags = new Map(Object.entries(presetData.modFlags || {}))
+          }
+          this.logger.debug(`tempModFlags loaded from preset file: ${JSON.stringify(Object.fromEntries(this.tempModFlags))}`)
+        },
+        tempFlagsFromJson(inputFlags){
+          let invalidFlags = {}
+          for (const key in inputFlags) {
+            if (this.tempFlags[key] === undefined) {
+              invalidFlags[key] = Object.assign({},inputFlags[key])
+              Object.assign(invalidFlags[key], {error: 'Unexpected object'})
+            } else {
+              const innerKeys = Object.keys(inputFlags[key]).filter(key => ["id","type"].includes(key))
+              let allInnerKeyValid = true
+              for (const i in innerKeys) {
+                if (this.tempFlags[key][innerKeys[i]]!=inputFlags[key][innerKeys[i]]){
+                  allInnerKeyValid = false
+                  invalidFlags[key] = Object.assign({},inputFlags[key])
+                  Object.assign(
+                    invalidFlags[key],
+                    { error: {
+                      [innerKeys[i]]: `Expected ${this.tempFlags[key][innerKeys[i]]} but found ${inputFlags[key][innerKeys[i]]}`
+                      }
+                    }
+                  )
                 }
-                const filePath = dialogReturn.filePaths[0]
-
-                fs.readFile(filePath, 'utf-8', (err, data) => {
-                  if(err){
-                    alert("An error ocurred reading the file :" + err.message);
-                    return;
-                  }
-
-                  // Change how to handle the file content
-                  console.log("The file content is : " + data);
-                  const oldSeed = this.tempFlags.NT_sync_world_seed.value
-                  //TODO potential security issue? Validate this input
-                  this.tempFlags = JSON.parse(data)
-                  this.tempFlags.NT_sync_world_seed.value = oldSeed
-                  this.$refs.orbInput.$refs.input.dispatchEvent(new Event("input"))
-                  this.$refs.seedInput.$refs.input.dispatchEvent(new Event("input"))
-                });
-              });
+              }
+              if (allInnerKeyValid) { this.tempFlags[key] = inputFlags[key] }
+            }
+          }
+          if(Object.keys(invalidFlags).length!=0) this.logger.debug(`JSON load ignoring invalid inputs:\n${JSON.stringify(invalidFlags)}`)
+          this.logger.debug(`tempFlags loaded from preset file: ${JSON.stringify(this.tempFlags)}`)
         },
         savePresets(){
           dialog.showSaveDialog({
@@ -234,13 +312,20 @@ export default {
             if(dialogReturn.canceled) return;
             // fileNames is an array that contains all the selected
             if(dialogReturn.filePath === undefined || dialogReturn.filePath.length === 0){
-              console.log("No file selected");
+              this.logger.debug("No file selected");
               return;
             }
             const filePath = dialogReturn.filePath
-            fs.writeFile(filePath, JSON.stringify(this.tempFlags), {}, (err)=>{
+            const presetData = this.generatePreset()
+            this.logger.debug(`Saving preset as: ${JSON.stringify(presetData)}`)
+            fs.writeFile(filePath, JSON.stringify(presetData), {}, (err)=>{
               if(err) alert(err)
             })
+            const presetModFlagsMap = new Map(Object.entries(presetData.modFlags));
+            this.$store.commit("setRoomPresetModFlags", presetModFlagsMap);
+            this.savedPreset = true
+            this.logger.debug(`savedPresets: ${this.savedPreset}`)
+            this.applyFlags()
           })
         },
         randomizeSeed() {
@@ -291,7 +376,7 @@ export default {
 
 }
 
-//if the sync orbs flag is not enabled, disable the group
+/* if the sync orbs flag is not enabled, disable the group */
 .orb-count-sync-group[aria-disabled="true"]{
   display: none;
 }

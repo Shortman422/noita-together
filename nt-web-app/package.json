@@ -5,6 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "next dev",
+    "devHTTPS": "ts-node nt-webserver-https.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -43,6 +44,7 @@
     "ws": "^7.4.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.10",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/jwk-to-pem": "^2.0.1",
     "@types/ms": "^0.7.34",
