@@ -2,7 +2,7 @@
     <div class="info-wrapper">
         <!-- TODO show personal alert for user -->
         <div ref="content">
-            <span :class="user.ready ? 'user-ready' : 'user-not-ready'">
+            <span :class="user.ready ? 'positive-color' : 'negative-color'">
                 <i
                     v-if="host.ready && user.ready && matchHost.length > 0"
                     class="fas fa-exclamation-triangle"
@@ -20,7 +20,7 @@
                 <p>Branch: {{ branch }}</p>
                 <p>Mod version: {{ version }}</p>
                 <p>Mods:</p>
-                <p v-for="mod in user.mods" :key="mod">{{ mod }}</p>
+                <p v-for="mod in user.mods" :key="mod" :style="getModStyle(mod)">{{ mod }}</p>
             </div>
             <div v-else>
                 <p>Waiting for game (make sure noita-together mod is enabled in game)...</p>
@@ -31,6 +31,7 @@
 
 <script>
 import { createPopper } from "@popperjs/core";
+import { MOD_LIST_TYPES } from "@/utils/constants.js";
 export default {
     props: {
         userId: {
@@ -143,6 +144,23 @@ export default {
             }
             return messages;
         },
+    },
+    methods: {
+        getModStyle(modName) {
+            const modFlags = this.$store.state.modFlags;
+            if (modFlags.has(modName)) {
+                const listName = modFlags.get(modName);
+                if (listName === MOD_LIST_TYPES.ALLOWED) {
+                    // Green color for allowed mods (same as .positive-color)
+                    return { color: 'rgba(172, 255, 47, 1)' };
+                } else if (listName === MOD_LIST_TYPES.DENIED) {
+                    // Red color for denied mods (same as .negative-color)
+                    return { color: 'rgba(255, 47, 47, 1)' };
+                }
+            }
+            // Default color for other mods
+            return { color: 'rgba(255, 255, 255, 0.8)' };
+        }
     },
     mounted() {
         if (this.$refs.info) {

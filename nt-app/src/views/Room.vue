@@ -1,6 +1,6 @@
 <template>
     <div class="content" id="room">
-        <vRoomFlags v-if="showRoomFlags" @applyFlags="sendFlags" @close="closeRoomFlags" />
+        <vRoomFlags v-if="showRoomFlags" @applyFlags="sendFlags" @close="closeRoomFlags"/>
         <vLeaveRoom v-if="showLeaveModal" @close="closeLeaveModal" />
 
         <div class="room-header">
@@ -13,7 +13,11 @@
                     <i class="fas fa-lock" slot="icon" v-if="room.locked"></i>
                     <i class="fas fa-lock-open" slot="icon" v-else></i>
                 </vButton>
-                <vButton @click="openRoomFlags">
+                <vButton
+                    @click="openRoomFlags"
+                    :class="{ 'preset-warn-save': shouldHighlightSave }"
+                    :title="shouldHighlightSave ? 'Allow/Deny mod lists have been changed since last settings save/load.' : 'Configure Room settings'"
+                >
                     <template>
                         <i class="fas fa-edit" slot="icon" v-if="isHost"></i>
                         <i class="far fa-question-circle" slot="icon" v-else></i>
@@ -75,25 +79,55 @@
           <div v-if="tab === '1'"> <!--Mods tab-->
             <table>
               <thead>
-              <tr>
-                <th class="tablist-row-top">
-                  <div class="tablist-arrow-spacing"/>
-                  <div class="tablist-col">Mod Name</div>
-                  <div class="tablist-col-smol">Users</div>
+              <tr class="modlist-row-top">
+                <th class="modlist-top-row-expand-icon-spacing"></th>
+                <th v-if="isHost" class="modlist-top-row-add-remove-icon-spacing far fa-question-circle"
+                    title="Add to Allow/Deny lists that can be saved with lobby presets. Settings are not enforced and users are assumed to not be obfuscating their mods."></th>
+                <th class="modlist-mod-name-spacing">
+                    <span>Mod Name</span>
+                </th>
+                <th v-if="hasModFlagList(MOD_LIST_TYPES.ALLOWED)" class="modlist-allow-deny-spacing">
+                    <span title="Visually indicates if a mod is allowed by the room preferences. These are not enforced as required.">Allowed</span>
+                    <i v-if="modSortOption!=SORT_OPTIONS.ALLOWED" class="modlist-icon-spacing inactive-color fas fa-sort-amount-down" title="Sort True first" @click="sortModsList(SORT_OPTIONS.ALLOWED)"></i>
+                    <i v-else class="modlist-icon-spacing active-color fas fa-sort-amount-down" title="Sorting by True first"></i>
+                </th>
+                <th v-if="hasModFlagList(MOD_LIST_TYPES.DENIED)" class="modlist-allow-deny-spacing">
+                    <span title="Visually indicates if a mod is denied by the room preferences. These are not enforced to be turned off.">Denied</span>
+                    <i v-if="modSortOption!=SORT_OPTIONS.DENIED" class="modlist-icon-spacing inactive-color fas fa-sort-amount-down" title="Sort True first" @click="sortModsList(SORT_OPTIONS.DENIED)"></i>
+                    <i v-else class="modlist-icon-spacing active-color fas fa-sort-amount-down" title="Sorting by True first"></i>
+                </th>
+                <th class="modlist-users-spacing">
+                    <span>Users</span>
+                    <i v-if="modSortOption!=SORT_OPTIONS.USERS" class="modlist-icon-spacing inactive-color fas fa-sort-amount-down" title="Sort by user count" @click="sortModsList(SORT_OPTIONS.USERS)"></i>
+                    <i v-else class="modlist-icon-spacing active-color fas fa-sort-amount-down" title="Sorting by user count"></i>
                 </th>
               </tr>
               </thead>
               <tbody>
                 <tr v-for="mod in modList" :key="mod.name">
                   <td>
-                    <div class="tablist-row" @click="toggleCollapse(mod.name)">
-                      <i title="click to see users"
+                    <div class="modlist-row">
+                      <div class="modlist-expand-icon-spacing" @click="toggleCollapse(mod.name)">
+                        <i title="click to see users"
                           class="fas"
                           slot="icon"
                           :class="expandedItem === mod.name ? 'fa-chevron-up tablist-arrow-up' : 'fa-chevron-down tablist-arrow-down'"
-                      />
-                      <div class="tablist-col">{{ `${ mod.name.substring(0, 150)}${mod.name.length>150?'...':''}` }}</div>
-                      <div class="tablist-col-smol">{{ mod.users.length }}</div>
+                        />
+                      </div>
+                      <div v-if="isHost" class="modlist-add-remove-icon-spacing">
+                          <i v-if="modFlags.get(mod.name)==MOD_LIST_TYPES.ALLOWED" class="positive-color fas fa-minus" title="Remove from Allowed" @click="setModFlag(mod.name)"></i>
+                          <i v-else class="positive-color fas fa-plus" title="Add to Allowed" @click="setModFlag(mod.name,MOD_LIST_TYPES.ALLOWED)"></i>
+                          <i v-if="modFlags.get(mod.name)==MOD_LIST_TYPES.DENIED" class="negative-color fas fa-minus" title="Remove from Denied" @click="setModFlag(mod.name)"></i>
+                          <i v-else class="negative-color modlist-icon-spacing fas fa-plus" title="Add to Denied" @click="setModFlag(mod.name,MOD_LIST_TYPES.DENIED)"></i>
+                      </div>
+                      <div class="modlist-mod-name-spacing"  @click="toggleCollapse(mod.name)">{{ `${ mod.name.substring(0, 150)}${mod.name.length>150?'...':''}` }}</div>
+                      <div v-if="hasModFlagList(MOD_LIST_TYPES.ALLOWED)" class="modlist-allow-deny-spacing">
+                        <i v-if="modFlags.get(mod.name)==MOD_LIST_TYPES.ALLOWED" class="positive-color fas fa-check"></i>
+                      </div>
+                      <div v-if="hasModFlagList(MOD_LIST_TYPES.DENIED)" class="modlist-allow-deny-spacing">
+                        <i v-if="modFlags.get(mod.name)==MOD_LIST_TYPES.DENIED" class="negative-color fas fa-check"></i>
+                      </div>
+                      <div class="modlist-users-spacing">{{ mod.users.length }}</div>
                     </div>
                     <div v-if="expandedItem === mod.name">
                       <table class="tablist-users-table">
@@ -176,6 +210,8 @@ import vLeaveRoom from "@/components/vLeaveRoom.vue"
 import vUserTooltip from "@/components/vUserTooltip.vue"
 import vChatAutocomplete from "@/components/vChatAutocomplete.vue"
 import vModUserTooltip from "@/components/vModUserTooltip.vue"
+import { MOD_LIST_TYPES, SORT_OPTIONS } from "@/utils/constants.js"
+import { Logger } from "../utils/Logger"
 export default {
     components: {
         vButton,
@@ -192,10 +228,13 @@ export default {
             showLeaveModal: false,
             expandedContent: "",
             sortByUser: false,
+            modSortOption: SORT_OPTIONS.USERS,
             shouldScroll: true,
             chatMsg: "",
             lastMsg: Date.now(),
-            locked: false
+            locked: false,
+            logger: new Logger('Room'),
+            presetUtilized: false,
         }
     },
     beforeCreate() {
@@ -219,6 +258,12 @@ export default {
         },
     },
     computed: {
+        MOD_LIST_TYPES() {
+            return MOD_LIST_TYPES
+        },
+        SORT_OPTIONS() {
+            return SORT_OPTIONS
+        },
         room() {
             return this.$store.state.room
         },
@@ -261,6 +306,15 @@ export default {
         expandedItem(){
           return this.expandedContent
         },
+        modFlags(){
+            return this.$store.state.modFlags
+        },
+        shouldHighlightSave() {
+            // Determines if highlighting should be enabled to alert the user
+            // when they have saved or loaded a preset and the current
+            // room mod list has changed
+            return this.isHost && this.presetUtilized && this.modListChanged();
+        },
         modList(){
             const mods = {}
             this.$store.state.room.users.forEach(user=>{
@@ -278,13 +332,23 @@ export default {
               name: modName,
               users: mods[modName]
             })).sort((a,b)=>{
-              const aUsers = a.users.length
-              const bUsers = b.users.length
+                let aSortValue = 0
+                let bSortValue = 0
+                if(this.modSortOption==SORT_OPTIONS.USERS) {
+                    aSortValue = a.users.length
+                    bSortValue = b.users.length
+                } else if (this.modSortOption==SORT_OPTIONS.ALLOWED){
+                    aSortValue = this.modFlags.has(a.name) && this.modFlags.get(a.name)==MOD_LIST_TYPES.ALLOWED ? 1 : 0
+                    bSortValue = this.modFlags.has(b.name) && this.modFlags.get(b.name)==MOD_LIST_TYPES.ALLOWED ? 1 : 0
+                } else { //(this.modSortOptions==SORT_OPTIONS.DENIED)
+                    aSortValue = this.modFlags.has(a.name) && this.modFlags.get(a.name)==MOD_LIST_TYPES.DENIED ? 1 : 0
+                    bSortValue = this.modFlags.has(b.name) && this.modFlags.get(b.name)==MOD_LIST_TYPES.DENIED ? 1 : 0
+                }
 
-              if(aUsers === bUsers){
+              if(aSortValue === bSortValue){
                 return a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1
               }
-              return aUsers > bUsers ? -1 : 1
+              return aSortValue > bSortValue ? -1 : 1;
             })
         },
         seedList(){
@@ -354,8 +418,12 @@ export default {
             this.chatMsg = ""
         },
         sendFlags(payload) {
-            this.$store.commit("cRoomFlagsUpdated", payload)
+            let {gameFlags, modFlags, presetUtilized } = payload
+            this.presetUtilized = presetUtilized
+            this.$store.commit("cRoomFlagsUpdated", gameFlags)
             this.$store.dispatch("sendFlags")
+            this.$store.commit("cRoomModFlagsUpdate", modFlags)
+            this.$store.dispatch("sendModFlags")
             this.closeRoomFlags()
         },
         openRoomFlags() {
@@ -370,11 +438,43 @@ export default {
         toggleCollapse(name){
             this.expandedContent = this.expandedContent === name ? "" : name
         },
+        setModFlag(modName, listName = 'default') {
+            if (listName == 'default' && this.modFlags.has(modName)) {
+                    this.modFlags.delete(modName)
+            } else {
+                this.modFlags.set(modName,listName)
+            }
+            this.$store.commit("cRoomModFlagsUpdate", this.modFlags)
+            this.$store.dispatch("sendModFlags")
+            this.logger.debug(`setModFlags with - isHost: ${this.isHost}, presetUtilized: ${this.presetUtilized}, and modListChanged: ${this.modListChanged()}`)
+            this.$forceUpdate();
+        },
+        hasModFlagList(listName){
+            const values = Array.from(this.modFlags.values());
+            return values.includes(listName);
+        },
+        modListChanged() {
+            return !this.mapsAreEqual(this.modFlags, this.$store.state.presetModFlags);
+        },
+        mapsAreEqual(map1, map2) {
+            if (!(map1 instanceof Map) || !(map2 instanceof Map) || map1.size !== map2.size) {
+                return false;
+            }
+            for (const [key, value] of map1) {
+                if (!map2.has(key) || map2.get(key) !== value) {
+                    return false;
+                }
+            }
+            return true;
+        },
         openTab(tab){
             this.setTab(tab)
         },
         sortUser(){
           this.sortByUser = !this.sortByUser
+        },
+        sortModsList(sortOption){
+            this.modSortOption = sortOption
         },
         closeLeaveModal() {
             this.showLeaveModal = false
@@ -441,12 +541,54 @@ export default {
     background: #2e2e2e !important;
 }
 
-.tablist-row-top{
+.modlist-row-top{
     width: 100%;
     justify-content: space-between;
     display: flex;
     position: sticky;
     top: 1.6em;
+}
+
+.modlist-top-row-expand-icon-spacing {
+    width: 10px;
+}
+
+.modlist-top-row-add-remove-icon-spacing {
+    width: 20px;
+}
+
+.modlist-expand-icon-spacing {
+    width: 20px;
+}
+
+.modlist-add-remove-icon-spacing {
+    width: 40px;
+}
+
+.modlist-mod-name-spacing {
+    flex: 1;
+    text-align: left;
+}
+
+.modlist-allow-deny-spacing {
+    width: 20%;
+    text-align: center;
+}
+
+.modlist-icon-spacing {
+    padding-left: 4px;
+    width: 20 px;
+}
+
+.modlist-row {
+    width: 100%;
+    justify-content: space-between;
+    display: flex;
+}
+
+.modlist-users-spacing {
+    width: 20%;
+    text-align: center;
 }
 
 .pin-row > th{
@@ -463,6 +605,14 @@ export default {
     width: 100%;
     justify-content: space-between;
     display: flex;
+}
+
+.tablist-row-top{
+    width: 100%;
+    justify-content: space-between;
+    display: flex;
+    position: sticky;
+    top: 1.6em;
 }
 
 .tablist-col{
@@ -595,12 +745,28 @@ export default {
     }
 }
 
-.user-ready {
-    color: #acff2f;
+.positive-color {
+    color: rgba(172, 255, 47, 1);
 }
 
-.user-not-ready {
-    color: #ff2f2f;
+.negative-color {
+    color: rgba(255, 47, 47, 1);
+}
+
+.preset-warn-save {
+    border: 2px solid rgb(200, 247, 30);
+}
+
+.preset-warn-save:hover {
+    border: 2px solid rgb(200, 247, 30);
+}
+
+.inactive-color{
+    color:#808080;
+}
+
+.active-color{
+    color:#fff;
 }
 
 .users-wrapper table td:nth-child(1n + 0) {

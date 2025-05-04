@@ -1,9 +1,13 @@
 import Vue from "vue"
 import Vuex from "vuex"
 import { ipcRenderer } from "electron"
+import { NT } from "@noita-together/nt-message"
+import { Logger } from "../utils/Logger"
+
+const logger = new Logger("Store");
 
 /** @typedef {{'boolean': boolean, 'string': string, 'number': number}} VueFlagTypes */
-/** @typedef {import('@noita-together/nt-message').NT.ClientRoomFlagsUpdate.IGameFlag} IGameFlag */
+/** @typedef {NT.ClientRoomFlagsUpdate.IGameFlag} IGameFlag */
 
 Vue.use(Vuex)
 const randomColor = (name) => {
@@ -282,6 +286,10 @@ const ipcPlugin = (ipc) => {
             store.commit("sRoomFlagsUpdated", data)
         })
 
+        ipc.on("sRoomModFlagsUpdated", (event, data) => {
+            store.commit("sRoomModFlagsUpdated", data)
+        })
+
         ipc.on("sRoomDeleted", (event, data) => {
             store.commit("resetRoom", data)
         })
@@ -393,6 +401,8 @@ export default new Vuex.Store({
             ]
         },
         roomFlags: [],
+        modFlags: new Map(),
+        presetModFlags: new Map(),
         roomChat: [],
         loading: false,
         joining: false,
@@ -443,6 +453,9 @@ export default new Vuex.Store({
         },
         flags: (state) => {
             return state.roomFlags
+        },
+        modFlags: (state) => {
+            return state.modFlags
         },
         protoFlags: (state) => {
             return flagsToProto(state.room.gamemode, state.roomFlags)
@@ -515,6 +528,15 @@ export default new Vuex.Store({
                 state.roomFlags,
                 payload
             )
+        },
+        cRoomModFlagsUpdate: (state, payload) => {
+            state.modFlags = payload
+        },
+        sRoomModFlagsUpdated: (state, payload) => {
+            state.modFlags = new Map(Object.entries(payload.modFlags || {}));
+        },
+        setRoomPresetModFlags(state, payload) {
+            state.presetModFlags = payload;
         },
         resetRoom: (state) => {
             state.stats = null
@@ -772,6 +794,14 @@ export default new Vuex.Store({
             ipcRenderer.send("CLIENT_MESSAGE", {
                 key: "cRoomFlagsUpdate",
                 payload: flagsToProto(state.room.gamemode, getters.flags)
+            })
+        },
+        sendModFlags: ({state}) => {
+            logger.debug(`sendModFlags sending cRoomModFlagsUpdate with: ${JSON.stringify(Object.fromEntries(state.modFlags))}`);
+            const payload = NT.ClientModFlagsUpdate.create({modFlags: Object.fromEntries(state.modFlags)});
+            ipcRenderer.send("CLIENT_MESSAGE", {
+                key: "cRoomModFlagsUpdate",
+                payload
             })
         },
         startRun: (context, payload) => {

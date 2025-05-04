@@ -80,6 +80,15 @@ DATABASE_PORT=<your postgres port>
 DATABASE_NAME=<your postgres database name>
 DATABASE_USERNAME=<your postgres username>
 DATABASE_SECRET=<your postgres password>
+
+# To test with a deployed auth and lobby-server by directly forwarding a port
+# you can utilize these values below and DEPLOYMENT.md instructions
+# The static IPv4 of the hosting device
+DEV_DEVICE_IP=<example: 192.168.X.XXX>
+# The self-signed certificate key filepath (without quotes)
+DEV_CERT_KEY=<your-path>/<name>-key.pem
+# The self-signed certificate filepath (without quotes)
+DEV_CERT=<your-path>/<name>.pem
 ```
 
 If your database requires SSL, supply the certificate to connect with in the environment variable `DATABASE_CA_CERT`. This is the contents of the certificate, not the path to it.
@@ -161,7 +170,7 @@ UWS_MAX_PAYLOAD_LENGTH_BYTES=
 WARN_PAYLOAD_LENGTH_BYTES=
 ```
 
-To launch the server locally in dev mode, run `./deploy/dev.sh`
+To launch the server locally in dev mode, run `./deploy/dev.sh` or `./deploy/dev.ps1`
 
 ##### Docker blue/green env config:
 
@@ -199,9 +208,9 @@ RULESET_ID=na
 RULE_ID=na
 ```
 
-To build a docker image, run `./deploy/build.sh dev blue`.
+To build a docker image, run `./deploy/build.sh dev blue` or `./deploy/build.ps1 dev blue`.
 
-To start/restart a docker container, run `./deploy/restart.sh dev blue`
+To start/restart a docker container, run `./deploy/restart.sh dev blue` or `./deploy/restart.ps1 dev blue`
 
 #### Configure the companion app (Electron app)
 
@@ -221,6 +230,9 @@ VUE_APP_NT_LOGIN_URL=http://localhost:3000/api/auth/login
 # port configured in `.env`. Include lobby-server's configured WS_PATH
 # at the end.
 VUE_APP_LOBBY_SERVER_WS_URL_BASE=ws://localhost:4444/ws
+
+# Setting to enable debug messaging
+VUE_APP_DEBUG=true
 ```
 
 Be sure you're using Node.JS version 16.20.0: `nvm use 16.20.0`
