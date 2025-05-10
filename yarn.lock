@@ -1121,13 +1121,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@noita-together/nt-message@https://github.com/Shortman422/nt-message.git#bee3d05929fc682da5246512c5af6914a1068a90":
+"@noita-together/nt-message@https://github.com/Shortman422/nt-message.git#eb1d0559c78f84c7a3a163ae047270f8a89d8134":
   version: 1.0.1
-  resolution: "@noita-together/nt-message@https://github.com/Shortman422/nt-message.git#commit=bee3d05929fc682da5246512c5af6914a1068a90"
+  resolution: "@noita-together/nt-message@https://github.com/Shortman422/nt-message.git#commit=eb1d0559c78f84c7a3a163ae047270f8a89d8134"
   dependencies:
     long: ^5.2.3
     protobufjs: ^7.2.5
-  checksum: 02eef773f67ce86cc74351fd15a8e034008e4c3512a5fcac50cda1380a409d477cb29375c7693ba3c46d4debe3a9d956e386d4c0dd4b9f320668061dff6a37ae
+  checksum: abd73f881afea1480d148d40e334428f6391fee087442a68262878c1f2408bb2234597a64e9f938b747c1abb5e62f384e89a1f80f59976ca789bb3a3656721a8
   languageName: node
   linkType: hard
 
@@ -1684,7 +1684,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=13.7.0":
+"@types/node@npm:*":
   version: 22.15.3
   resolution: "@types/node@npm:22.15.3"
   dependencies:
@@ -1697,6 +1697,15 @@ __metadata:
   version: 20.2.5
   resolution: "@types/node@npm:20.2.5"
   checksum: 38ce7c7e9d76880dc632f71d71e0d5914fcda9d5e9a7095d6c339abda55ca4affb0f2a882aeb29398f8e09d2c5151f0b6586c81c8ccdfe529c34b1ea3337425e
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:>=13.7.0":
+  version: 22.15.15
+  resolution: "@types/node@npm:22.15.15"
+  dependencies:
+    undici-types: ~6.21.0
+  checksum: 6e1d1c55728a25dd4268aaac62d1a4a6dd3355a9cb76300a9d44f88a3894f39210a4eff471f6ef79c0ae759049a512582e5ca21fe344c6a02e553d02e8d43835
   languageName: node
   linkType: hard
 
@@ -11684,7 +11693,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "noita-together@workspace:."
   dependencies:
-    "@noita-together/nt-message": "https://github.com/Shortman422/nt-message.git#bee3d05929fc682da5246512c5af6914a1068a90"
+    "@noita-together/nt-message": "https://github.com/Shortman422/nt-message.git#eb1d0559c78f84c7a3a163ae047270f8a89d8134"
     "@types/node": ^20.2.5
     axios: ^1.4.0
     prettier: ^3.1.0

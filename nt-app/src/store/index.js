@@ -806,8 +806,8 @@ export default new Vuex.Store({
             })
         },
         sendModFlags: ({state}) => {
-            logger.debug(`sendModFlags sending cRoomModFlagsUpdate with: ${JSON.stringify(Object.fromEntries(state.modFlags))}`);
             const payload = NT.ClientModFlagsUpdate.create({modFlags: Object.fromEntries(state.modFlags)});
+            logger.debug(`sendModFlags sending cRoomModFlagsUpdate with: ${JSON.stringify(payload)}`);
             ipcRenderer.send("CLIENT_MESSAGE", {
                 key: "cRoomModFlagsUpdate",
                 payload

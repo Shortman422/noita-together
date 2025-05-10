@@ -81,25 +81,30 @@
               <thead>
               <tr class="modlist-row-top">
                 <th class="modlist-top-row-expand-icon-spacing"></th>
-                <th v-if="isHost" class="modlist-top-row-add-remove-icon-spacing far fa-question-circle"
-                    title="Add to Allow/Deny lists that can be saved with lobby presets. Settings are not enforced and users are assumed to not be obfuscating their mods."></th>
-                <th class="modlist-mod-name-spacing">
-                    <span>Mod Name</span>
+                <th v-if="isHost" class="modlist-top-row-add-remove-icon-spacing"
+                  title="Add to Allow/Deny lists that can be saved with lobby presets. Settings are not enforced and users are assumed to not be obfuscating their mods.">
+                  <i class="far fa-question-circle"></i>
                 </th>
-                <th v-if="hasModFlagList(MOD_LIST_TYPES.ALLOWED)" class="modlist-allow-deny-spacing">
-                    <span title="Visually indicates if a mod is allowed by the room preferences. These are not enforced as required.">Allowed</span>
-                    <i v-if="modSortOption!=SORT_OPTIONS.ALLOWED" class="modlist-icon-spacing inactive-color fas fa-sort-amount-down" title="Sort True first" @click="sortModsList(SORT_OPTIONS.ALLOWED)"></i>
-                    <i v-else class="modlist-icon-spacing active-color fas fa-sort-amount-down" title="Sorting by True first"></i>
+                <th v-else class="modlist-top-row-add-remove-icon-spacing" :style="{ width: '0%' }"></th>
+                <th class="modlist-mod-name-alignment" :style="{ width: modNameColumnWidth }">
+                  <span>Mod Name</span>
                 </th>
-                <th v-if="hasModFlagList(MOD_LIST_TYPES.DENIED)" class="modlist-allow-deny-spacing">
-                    <span title="Visually indicates if a mod is denied by the room preferences. These are not enforced to be turned off.">Denied</span>
-                    <i v-if="modSortOption!=SORT_OPTIONS.DENIED" class="modlist-icon-spacing inactive-color fas fa-sort-amount-down" title="Sort True first" @click="sortModsList(SORT_OPTIONS.DENIED)"></i>
-                    <i v-else class="modlist-icon-spacing active-color fas fa-sort-amount-down" title="Sorting by True first"></i>
+                <th v-if="hasModFlagList(NT.ModFlagsListType.ALLOWED)" class="modlist-allow-deny-spacing">
+                  <span title="Visually indicates if a mod is allowed by the room preferences. These are not enforced as required.">Allowed</span>
+                  <i v-if="modSortOption!=SORT_OPTIONS.ALLOWED" class="modlist-icon-padding inactive-color fas fa-sort-amount-down" title="Sort True first" @click="sortModsList(SORT_OPTIONS.ALLOWED)"></i>
+                  <i v-else class="modlist-icon-padding active-color fas fa-sort-amount-down" title="Sorting by True first"></i>
                 </th>
+                <th v-else class="modlist-allow-deny-spacing" :style="{ width: '0%' }"></th>
+                <th v-if="hasModFlagList(NT.ModFlagsListType.DENIED)" class="modlist-allow-deny-spacing">
+                  <span title="Visually indicates if a mod is denied by the room preferences. These are not enforced to be turned off.">Denied</span>
+                  <i v-if="modSortOption!=SORT_OPTIONS.DENIED" class="modlist-icon-padding inactive-color fas fa-sort-amount-down" title="Sort True first" @click="sortModsList(SORT_OPTIONS.DENIED)"></i>
+                  <i v-else class="modlist-icon-padding active-color fas fa-sort-amount-down" title="Sorting by True first"></i>
+                </th>
+                <th v-else class="modlist-allow-deny-spacing" :style="{ width: '0%' }"></th>
                 <th class="modlist-users-spacing">
-                    <span>Users</span>
-                    <i v-if="modSortOption!=SORT_OPTIONS.USERS" class="modlist-icon-spacing inactive-color fas fa-sort-amount-down" title="Sort by user count" @click="sortModsList(SORT_OPTIONS.USERS)"></i>
-                    <i v-else class="modlist-icon-spacing active-color fas fa-sort-amount-down" title="Sorting by user count"></i>
+                  <span>Users</span>
+                  <i v-if="modSortOption!=SORT_OPTIONS.USERS" class="modlist-icon-padding inactive-color fas fa-sort-amount-down" title="Sort by user count" @click="sortModsList(SORT_OPTIONS.USERS)"></i>
+                  <i v-else class="modlist-icon-padding active-color fas fa-sort-amount-down" title="Sorting by user count"></i>
                 </th>
               </tr>
               </thead>
@@ -109,24 +114,25 @@
                     <div class="modlist-row">
                       <div class="modlist-expand-icon-spacing" @click="toggleCollapse(mod.name)">
                         <i title="click to see users"
-                          class="fas"
-                          slot="icon"
-                          :class="expandedItem === mod.name ? 'fa-chevron-up tablist-arrow-up' : 'fa-chevron-down tablist-arrow-down'"
-                        />
+                          :class="expandedItem === mod.name ? 'fas fa-chevron-up tablist-arrow-up' : 'fas fa-chevron-down tablist-arrow-down'">
+                        </i>
                       </div>
                       <div v-if="isHost" class="modlist-add-remove-icon-spacing">
-                          <i v-if="modFlags.get(mod.name)==MOD_LIST_TYPES.ALLOWED" class="positive-color fas fa-minus" title="Remove from Allowed" @click="setModFlag(mod.name)"></i>
-                          <i v-else class="positive-color fas fa-plus" title="Add to Allowed" @click="setModFlag(mod.name,MOD_LIST_TYPES.ALLOWED)"></i>
-                          <i v-if="modFlags.get(mod.name)==MOD_LIST_TYPES.DENIED" class="negative-color fas fa-minus" title="Remove from Denied" @click="setModFlag(mod.name)"></i>
-                          <i v-else class="negative-color modlist-icon-spacing fas fa-plus" title="Add to Denied" @click="setModFlag(mod.name,MOD_LIST_TYPES.DENIED)"></i>
+                        <i v-if="modFlags.get(mod.name)==NT.ModFlagsListType.ALLOWED" class="positive-color fas fa-undo" title="Remove from Allowed" @click="setModFlag(mod.name)"></i>
+                        <i v-else class="positive-color fas fa-check-square" title="Add to Allowed" @click="setModFlag(mod.name,NT.ModFlagsListType.ALLOWED)"></i>
+                        <i v-if="modFlags.get(mod.name)==NT.ModFlagsListType.DENIED" class="negative-color modlist-icon-padding modlist-icon-spacing fas fa-undo" title="Remove from Denied" @click="setModFlag(mod.name)"></i>
+                        <i v-else class="negative-color modlist-icon-padding modlist-icon-spacing fas fa-ban" title="Add to Denied" @click="setModFlag(mod.name,NT.ModFlagsListType.DENIED)"></i>
                       </div>
-                      <div class="modlist-mod-name-spacing"  @click="toggleCollapse(mod.name)">{{ `${ mod.name.substring(0, 150)}${mod.name.length>150?'...':''}` }}</div>
-                      <div v-if="hasModFlagList(MOD_LIST_TYPES.ALLOWED)" class="modlist-allow-deny-spacing">
-                        <i v-if="modFlags.get(mod.name)==MOD_LIST_TYPES.ALLOWED" class="positive-color fas fa-check"></i>
+                      <div v-else class="modlist-add-remove-icon-spacing" :style="{ width: '0%' }"></div>
+                      <div class="modlist-mod-name-alignment" :style="{ width: modNameColumnWidth }" @click="toggleCollapse(mod.name)">{{ `${ mod.name.substring(0, 150)}${mod.name.length>150?'...':''}` }}</div>
+                      <div v-if="hasModFlagList(NT.ModFlagsListType.ALLOWED)" class="modlist-allow-deny-spacing">
+                        <i v-if="modFlags.get(mod.name)==NT.ModFlagsListType.ALLOWED" class="positive-color fas fa-check-square"></i>
                       </div>
-                      <div v-if="hasModFlagList(MOD_LIST_TYPES.DENIED)" class="modlist-allow-deny-spacing">
-                        <i v-if="modFlags.get(mod.name)==MOD_LIST_TYPES.DENIED" class="negative-color fas fa-check"></i>
+                      <div v-else class="modlist-allow-deny-spacing" :style="{ width: '0%' }"></div>
+                      <div v-if="hasModFlagList(NT.ModFlagsListType.DENIED)" class="modlist-allow-deny-spacing">
+                        <i v-if="modFlags.get(mod.name)==NT.ModFlagsListType.DENIED" class="negative-color fas fa-ban"></i>
                       </div>
+                      <div v-else class="modlist-allow-deny-spacing" :style="{ width: '0%' }"></div>
                       <div class="modlist-users-spacing">{{ mod.users.length }}</div>
                     </div>
                     <div v-if="expandedItem === mod.name">
@@ -161,8 +167,8 @@
                       <i title="click to see users"
                           class="fas"
                           slot="icon"
-                          :class="expandedItem === seed.name ? 'fa-chevron-up tablist-arrow-up' : 'fa-chevron-down tablist-arrow-down'"
-                      />
+                          :class="expandedItem === seed.name ? 'fa-chevron-up tablist-arrow-up' : 'fa-chevron-down tablist-arrow-down'">
+                        </i>
                       <div class="tablist-col">{{ seed.name }}</div>
                       <div class="tablist-col-smol">{{ seed.users.length }}</div>
                     </div>
@@ -210,7 +216,8 @@ import vLeaveRoom from "@/components/vLeaveRoom.vue"
 import vUserTooltip from "@/components/vUserTooltip.vue"
 import vChatAutocomplete from "@/components/vChatAutocomplete.vue"
 import vModUserTooltip from "@/components/vModUserTooltip.vue"
-import { MOD_LIST_TYPES, SORT_OPTIONS } from "@/utils/constants.js"
+import { SORT_OPTIONS } from "@/utils/constants.js"
+import { NT } from "@noita-together/nt-message"
 import { Logger } from "../utils/Logger"
 export default {
     components: {
@@ -224,6 +231,7 @@ export default {
     },
     data() {
         return {
+            NT: NT,
             showRoomFlags: false,
             showLeaveModal: false,
             expandedContent: "",
@@ -258,9 +266,6 @@ export default {
         },
     },
     computed: {
-        MOD_LIST_TYPES() {
-            return MOD_LIST_TYPES
-        },
         SORT_OPTIONS() {
             return SORT_OPTIONS
         },
@@ -315,6 +320,13 @@ export default {
             // room mod list has changed
             return this.isHost && this.presetUtilized && this.modListChanged();
         },
+        modNameColumnWidth() {
+            const spaceForAllowed = this.hasModFlagList(NT.ModFlagsListType.ALLOWED) ? 10 : 0
+            const spaceForDenied = this.hasModFlagList(NT.ModFlagsListType.DENIED) ? 10 : 0
+            const spaceForHost = this.isHost ? 5 : 0
+            const baseSpace = 80
+            return `${baseSpace - spaceForHost - spaceForAllowed - spaceForDenied}%`
+        },
         modList(){
             const mods = {}
             this.$store.state.room.users.forEach(user=>{
@@ -338,11 +350,11 @@ export default {
                     aSortValue = a.users.length
                     bSortValue = b.users.length
                 } else if (this.modSortOption==SORT_OPTIONS.ALLOWED){
-                    aSortValue = this.modFlags.has(a.name) && this.modFlags.get(a.name)==MOD_LIST_TYPES.ALLOWED ? 1 : 0
-                    bSortValue = this.modFlags.has(b.name) && this.modFlags.get(b.name)==MOD_LIST_TYPES.ALLOWED ? 1 : 0
+                    aSortValue = this.modFlags.has(a.name) && this.modFlags.get(a.name)==NT.ModFlagsListType.ALLOWED ? 1 : 0
+                    bSortValue = this.modFlags.has(b.name) && this.modFlags.get(b.name)==NT.ModFlagsListType.ALLOWED ? 1 : 0
                 } else { //(this.modSortOptions==SORT_OPTIONS.DENIED)
-                    aSortValue = this.modFlags.has(a.name) && this.modFlags.get(a.name)==MOD_LIST_TYPES.DENIED ? 1 : 0
-                    bSortValue = this.modFlags.has(b.name) && this.modFlags.get(b.name)==MOD_LIST_TYPES.DENIED ? 1 : 0
+                    aSortValue = this.modFlags.has(a.name) && this.modFlags.get(a.name)==NT.ModFlagsListType.DENIED ? 1 : 0
+                    bSortValue = this.modFlags.has(b.name) && this.modFlags.get(b.name)==NT.ModFlagsListType.DENIED ? 1 : 0
                 }
 
               if(aSortValue === bSortValue){
@@ -541,7 +553,7 @@ export default {
     background: #2e2e2e !important;
 }
 
-.modlist-row-top{
+.modlist-row-top {
     width: 100%;
     justify-content: space-between;
     display: flex;
@@ -550,34 +562,48 @@ export default {
 }
 
 .modlist-top-row-expand-icon-spacing {
-    width: 10px;
+    width: 2.5%;
 }
 
 .modlist-top-row-add-remove-icon-spacing {
-    width: 20px;
+    width: 5%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .modlist-expand-icon-spacing {
-    width: 20px;
+    /* width: 10px; */
+    width: 2.5%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .modlist-add-remove-icon-spacing {
-    width: 40px;
+    width: 5%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.modlist-mod-name-spacing {
-    flex: 1;
+.modlist-mod-name-alignment {
     text-align: left;
 }
 
 .modlist-allow-deny-spacing {
-    width: 20%;
-    text-align: center;
+    width: 10%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modlist-icon-padding {
+    padding-left: 4px;
 }
 
 .modlist-icon-spacing {
-    padding-left: 4px;
-    width: 20 px;
+    width: 20px;
 }
 
 .modlist-row {
@@ -587,7 +613,7 @@ export default {
 }
 
 .modlist-users-spacing {
-    width: 20%;
+    width: 10%;
     text-align: center;
 }
 
@@ -627,7 +653,7 @@ export default {
 
 .tablist-users-table{
     border: 1px solid #2E2E2E;
-    width: 60%;
+    width: 90%;
     margin-top: 8px;
     margin-left: 32px;
 }

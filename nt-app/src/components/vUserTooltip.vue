@@ -31,7 +31,7 @@
 
 <script>
 import { createPopper } from "@popperjs/core";
-import { MOD_LIST_TYPES } from "@/utils/constants.js";
+import { NT } from "@noita-together/nt-message";
 export default {
     props: {
         userId: {
@@ -150,10 +150,10 @@ export default {
             const modFlags = this.$store.state.modFlags;
             if (modFlags.has(modName)) {
                 const listName = modFlags.get(modName);
-                if (listName === MOD_LIST_TYPES.ALLOWED) {
+                if (listName === NT.ModFlagsListType.ALLOWED) {
                     // Green color for allowed mods (same as .positive-color)
                     return { color: 'rgba(172, 255, 47, 1)' };
-                } else if (listName === MOD_LIST_TYPES.DENIED) {
+                } else if (listName === NT.ModFlagsListType.DENIED) {
                     // Red color for denied mods (same as .negative-color)
                     return { color: 'rgba(255, 47, 47, 1)' };
                 }
